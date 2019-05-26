@@ -1,33 +1,17 @@
 function Get-CalculatedPageIndexNumber(
-    [Parameter(Mandatory, Position = 0)][Array] $MenuItems,
-    [Parameter(Position = 1)][int]$MenuPosition,
-    [Switch]$TopIndex,
-    [Switch]$ItemCount,
-    [Switch]$BottomIndex
+    [Parameter(Mandatory)][pscustomobject]$Viewport,
+    [Parameter(Mandatory)][int]$Position,
+    [Parameter(Mandatory)][int]$ItemCount,
+    [int]$HeaderSpace = 0
 ) {
-    $WindowHeight = Get-ConsoleHeight
-
-    $TopIndexNumber = 0;
-    $MenuItemCount = $MenuItems.Count
-
-    if ($MenuItemCount -gt $WindowHeight) {
-        $MenuItemCount = $WindowHeight;
-        if ($MenuPosition -gt $MenuItemCount) {
-            $TopIndexNumber = $MenuPosition - $MenuItemCount;
-        }
+    # update height to match console
+    $Viewport.height = [Math]::min((Get-ConsoleHeight) - $HeaderSpace, $ItemCount)
+    # Scroll up as necessary
+    if($Viewport.top -gt $Position) {
+        $Viewport.top = $Position
     }
-
-    if ($TopIndex) {
-        Return $TopIndexNumber
+    # Scroll down as necessary
+    if($Viewport.top + $Viewport.height -le $Position) {
+        $Viewport.top = $Position - $Viewport.height + 1
     }
-
-    if ($ItemCount) {
-        Return $MenuItemCount
-    }
-
-    if ($BottomIndex) {
-        Return $TopIndexNumber + [Math]::Min($MenuItemCount, $WindowHeight) - 1
-    }
-
-    Throw 'Invalid option combination'
 }

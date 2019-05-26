@@ -84,7 +84,9 @@ function Show-Menu {
         [Switch]$ReturnIndex, 
         [Switch]$MultiSelect, 
         [ConsoleColor] $ItemFocusColor = [ConsoleColor]::Green,
-        [ScriptBlock] $MenuItemFormatter = { Param($M) Format-MenuItemDefault $M }
+        [int] $PageSize = 0,
+        [ScriptBlock] $MenuItemFormatter = { Param($M) Format-MenuItemDefault $M },
+        [int]$HeaderSpace = 1
     )
 
     Test-HostSupported
@@ -96,55 +98,80 @@ function Show-Menu {
     # Initialize valid position
     $Position = Get-WrappedPosition $MenuItems -Position 0 -PositionOffset 1
 
-    $CurrentSelection = @()
     $CursorPosition = [System.Console]::CursorTop
     
     try {
         [System.Console]::CursorVisible = $False # Prevents cursor flickering
 
+        [pscustomobject[]]$MetaItems = foreach($MenuItem in $MenuItems) {
+            $IsSeparator = Test-MenuSeparator $MenuItem
+            $Formatted = if ($IsSeparator) { $MenuItem } else { & $MenuItemFormatter $MenuItem }
+            if (!$Formatted) {
+                Throw "'MenuItemFormatter' returned an empty string for item #$CurrentIndex"
+            }
+            $item = [pscustomobject]@{
+                MenuItem = $MenuItem
+                IsSeparator = $IsSeparator
+                Formatted = $Formatted
+                selected = $false
+            }
+            $item
+        }
+
+        $viewport = @{
+            top = 0
+            height = 0
+        }
+
         # Body
         $WriteMenu = {
-            ([ref]$MenuHeight).Value = Write-Menu -MenuItems $MenuItems `
+            Get-CalculatedPageIndexNumber -Viewport $viewport -Position $Position -ItemCount $MetaItems.Count -HeaderSpace $HeaderSpace
+            ([ref]$RenderedRowCount).Value = Write-Menu -MenuItems $MetaItems `
                 -MenuPosition $Position `
                 -MultiSelect:$MultiSelect `
-                -CurrentSelection:$CurrentSelection `
                 -ItemFocusColor $ItemFocusColor `
-                -MenuItemFormatter $MenuItemFormatter
+                -Viewport $viewport
         }
-        $MenuHeight = 0
+        $RenderedRowCount = 0
 
         & $WriteMenu
         While ($True) {
-            If (Test-KeyEscape $VKeyCode) {
-                Return $null
-            }
+            $CurrentPress = Read-VKey
+            $VKeyCode = $CurrentPress.VirtualKeyCode
 
             if (Test-KeyEnter $VKeyCode) {
                 Break
             }
 
-            $CurrentPress = Read-VKey
-            $VKeyCode = $CurrentPress.VirtualKeyCode
-
             If (Test-KeySpace $VKeyCode) {
-                $CurrentSelection = Toggle-Selection $Position $CurrentSelection
+                $Item = $MetaItems[$Position]
+                $Item.selected = ! $Item.selected
             }
 
-            $Position = Get-PositionWithVKey -MenuItems $MenuItems -Position $Position -VKeyCode $VKeyCode
+            If (Test-KeyEscape $VKeyCode) {
+                return $null
+            }
+
+            $ps = if($PageSize) {$PageSize} else {$viewport.height - 1}
+            $Position = Get-PositionWithVKey -MenuItems $MenuItems -Position $Position -VKeyCode $VKeyCode -PageSize $ps
 
             If (!$(Test-KeyEscape $VKeyCode)) {
-                [System.Console]::SetCursorPosition(0, [Console]::CursorTop - $MenuHeight)
+                [System.Console]::SetCursorPosition(0, [Console]::CursorTop - $RenderedRowCount + 1)
                 & $WriteMenu
             }
         }
     }
     finally {
         [System.Console]::CursorVisible = $true
+        write-host ''
     }
 
     if ($ReturnIndex -eq $false -and $null -ne $Position) {
         if ($MultiSelect) {
-            Return $MenuItems[$CurrentSelection]
+            $ret = foreach($i in $MetaItems) {
+                if($i.selected) {$i.MenuItem}
+            }
+            return $ret
         }
         else {
             Return $MenuItems[$Position]
@@ -152,7 +179,10 @@ function Show-Menu {
     }
     else {
         if ($MultiSelect) {
-            Return $CurrentSelection
+            $ret = for($i = 0; $i -lt $MetaItems.count; $i++) {
+                if($MetaItems[$i].selected) {$i}
+            }
+            return $ret
         }
         else {
             Return $Position

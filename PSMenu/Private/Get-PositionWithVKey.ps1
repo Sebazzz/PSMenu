@@ -1,7 +1,6 @@
-function Get-PositionWithVKey([Array]$MenuItems, [int]$Position, $VKeyCode) {
+function Get-PositionWithVKey([Array]$MenuItems, [int]$Position, $VKeyCode, $PageSize) {
     $MinPosition = 0
     $MaxPosition = $MenuItems.Count - 1
-    $WindowHeight = Get-ConsoleHeight
     
     Set-Variable -Name NewPosition -Option AllScope -Value $Position
 
@@ -27,7 +26,7 @@ function Get-PositionWithVKey([Array]$MenuItems, [int]$Position, $VKeyCode) {
     }
 
     If (Test-KeyPageDown $VKeyCode) {
-        $NewPosition = [Math]::Min($MaxPosition, $NewPosition + $WindowHeight)
+        $NewPosition = [Math]::Min($MaxPosition, $NewPosition + $PageSize)
 
         Reset-InvalidPosition -PositionOffset -1
     }
@@ -39,7 +38,7 @@ function Get-PositionWithVKey([Array]$MenuItems, [int]$Position, $VKeyCode) {
     }
 
     IF (Test-KeyPageUp $VKeyCode) {
-        $NewPosition = [Math]::Max($MinPosition, $NewPosition - $WindowHeight)
+        $NewPosition = [Math]::Max($MinPosition, $NewPosition - $PageSize)
 
         Reset-InvalidPosition -PositionOffset -1
     }
