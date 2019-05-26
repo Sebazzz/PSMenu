@@ -74,7 +74,7 @@
     # NestedModules = @()
 
     # Functions to export from this module
-    FunctionsToExport = @('Show-Menu')
+    FunctionsToExport = @('Show-Menu', 'Get-MenuSeparator')
 
     # Cmdlets to export from this module
     # CmdletsToExport = '*'
