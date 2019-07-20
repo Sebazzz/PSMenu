@@ -83,9 +83,9 @@ function Show-Menu {
         [Parameter(Mandatory, Position = 0)][Array] $MenuItems,
         [Switch]$ReturnIndex, 
         [Switch]$MultiSelect, 
-        [ConsoleColor] $ItemFocusColor = [ConsoleColor]::Green,
-        [int] $PageSize = 0,
+        [ConsoleColor] $ItemFocusColor = [ConsoleColor]::Green
         [ScriptBlock] $MenuItemFormatter = { Param($M) Format-MenuItemDefault $M },
+        [int] $PageSize = 0,
         [int]$HeaderSpace = 1
     )
 
