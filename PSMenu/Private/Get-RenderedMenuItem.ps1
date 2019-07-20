@@ -26,10 +26,10 @@ function Get-RenderedMenuItem(
     $Text = $Text.PadRight($DesiredWidth, ' ')
 
     if ($IsItemFocused) {
-        (New-Text $Text -ForegroundColor $FocusColor).ToString()
+        Return (New-Text $Text -ForegroundColor $FocusColor).ToString()
     }
     else {
-        $Text
+        Return $Text
     }
 }
 
