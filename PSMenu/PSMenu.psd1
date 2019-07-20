@@ -71,7 +71,7 @@
     # FormatsToProcess = 'ServerOpsMenu.Format.ps1xml'
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    NestedModules = @('pansies')
+    NestedModules = @()
 
     # Functions to export from this module
     FunctionsToExport = @('Show-Menu', 'Get-MenuSeparator')
